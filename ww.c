@@ -30,3 +30,9 @@ void word_wrap(char *s, const int newline){
     
 
 }
+
+/* PSEUDOCODE
+use char buffer array (put it as second argument in read())
+- read(filename, bufferarray, NULL/sizeofread)
+- bufferarray length will be length of desired columns
+- once bufferarray is full AND/OR word cannot fit in bufferarray, start a new line
