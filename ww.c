@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 inline int word_length(const char *str){
     int getIndex = 0;
@@ -31,8 +32,34 @@ void word_wrap(char *s, const int newline){
 
 }
 
+int main(int argc, char** argv) {
+    if (argc == 3){
+        //argv[1] = columnNum and argv[2] = filename/directoryname
+        
+        //if argv[2] is directory
+        if (argv[2][0] == "."){
+            //dont wrap
+        }
+        if (strstr(argv[2], "wrap") != NULL){
+            //dont wrap
+        }
+    }
+    else if (argc == 2){
+        //argv[1] = columnNum and do standard input way
+    }
+
+    //buffer array
+    int columns = argv[1];
+    char* buffer;
+    buffer = (char*)malloc(columns*sizeof(char));
+
+    
+
+}
+
 /* PSEUDOCODE
 use char buffer array (put it as second argument in read())
 - read(filename, bufferarray, NULL/sizeofread)
 - bufferarray length will be length of desired columns
 - once bufferarray is full AND/OR word cannot fit in bufferarray, start a new line
+- PRINT TO STANDARD OUTPUT!!!
