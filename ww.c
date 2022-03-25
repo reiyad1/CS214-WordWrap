@@ -10,7 +10,7 @@ inline int word_length(const char *str){
     return(getIndex);
 }
 
-void word_wrap(char *s, const int newline){
+void word_wrap2(char *s, const int newline){
     int length;
     int w;
     int word_length = 0;
@@ -29,6 +29,44 @@ void word_wrap(char *s, const int newline){
     }
     //read(filename, buffer, number of char bytes)
     
+
+}
+
+void word_wrap(filename, *buffer, columns){
+    int i;
+
+    //using columns+1 to see if we cut a word in half or not
+    for (i = 0; i < columns+1, i++){
+        read(filename, buffer, 1);
+        if (buffer[i] == '\n'){
+            printf('\n');
+        }
+
+        //to ensure that we dont have consecutive spaces
+        if (buffer.length() > 1){
+            if (buffer[i] == " " && buffer[i-1] == " "){
+                buffer[i] = '\0';
+            }
+        }
+    }
+
+    if (buffer[columns] == ' ' || buffer[columns] == '\n'){
+        for (i = 0; i < columns; i++){
+            printf("%c", buffer[i]);
+        }
+        printf("\n");
+    }
+    else if (buffer[columns-1] == ' ' || buffer[columns-1] == '\n'){
+        for (i = 0; i < columns; i++){
+            printf("%c", buffer[i]);
+        }
+        printf("\n");
+    }
+    else{   //stops in the middle of a word
+        //go backwards in buffer array until we reach a white space
+        //then replace the characters after the white space at the beginning of the buffer array
+    }
+
 
 }
 
@@ -51,7 +89,8 @@ int main(int argc, char** argv) {
     //buffer array
     int columns = argv[1];
     char* buffer;
-    buffer = (char*)malloc(columns*sizeof(char));
+    //MAKE BUFFER LENGTH MACRO- FIX!
+    buffer = (char*)malloc((columns+1) * sizeof(char));
 
 
     // read one character at a time
