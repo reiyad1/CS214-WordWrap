@@ -53,7 +53,19 @@ int main(int argc, char** argv) {
     char* buffer;
     buffer = (char*)malloc(columns*sizeof(char));
 
-    
+
+    // read one character at a time
+/* while((ch = getc(fp)) != EOF)
+    {
+      //...
+    } 
+...
+int ReadFile(FILE* fp)
+{
+   //Do what you wish... :)
+  return getc(fp); 
+}  
+*/
 
 }
 
