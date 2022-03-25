@@ -65,6 +65,28 @@ void word_wrap(filename, *buffer, columns){
     else{   //stops in the middle of a word
         //go backwards in buffer array until we reach a white space
         //then replace the characters after the white space at the beginning of the buffer array
+        int index = buffer.length() - 1;
+        int counter = 0;    //counts the characters after the whitespace we are printing till
+
+        //gets index of what we are printing to in buffer array
+        while (buffer[index] != " "){
+            index--;
+            counter++;
+        }
+
+        //print characters
+        for (i = 0; i < index; i++){
+            printf("%c", buffer[i]);
+        }
+        printf("\n");
+
+        //move pointer in file to where we last printed
+        fseek(filename, -counter, SEEK_SET);
+
+        //empty the buffer array
+        for (i = 0; i < columns+1; i++){
+            buffer[i] = '\0';
+        }
     }
 
 
