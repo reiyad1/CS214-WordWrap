@@ -15,6 +15,7 @@ void word_wrap(int filename, char *buffer, char *temp, int columns){
     int i;
     int counter = 0;
     int arrayIndex = -1;
+    ssize_t s = 0;
     //int bytePosition;
 
     ssize_t checkEOF;
@@ -37,6 +38,19 @@ void word_wrap(int filename, char *buffer, char *temp, int columns){
                 return;
             }
             
+<<<<<<< HEAD
+=======
+            while ((i = getchar() ! =  EOF)){
+                s++;
+            }
+            printf("Size: %z\n", s);
+            
+            //if (i == 0){
+                //if (buffer[i] == '\n'){
+                    //printf("\n");
+                //}
+            //}
+>>>>>>> b19af0bbf5d5298c4da5b8b1cf42e47122059665
             //printf("%c", buffer[i]);
             //to ensure that we dont have consecutive spaces
             if (i > 0){
