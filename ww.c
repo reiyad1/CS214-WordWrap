@@ -7,15 +7,16 @@
 #include <dirent.h>
 #include <ctype.h>
 
-inline int word_length(const char *str){
+/*inline int word_length(const char *str){
     int getIndex = 0;
     while(str[getIndex]! = 0 && str[getIndex] ! = '' && str[getIndex]! = '\n'){
         getIndex++;
     }
     return(getIndex);
-}
+}*/
 
-void word_wrap2(char *s, const int newline){
+
+/*void word_wrap2(char *s, const int newline){
     int length;
     int w;
     int word_length = 0;
@@ -35,7 +36,7 @@ void word_wrap2(char *s, const int newline){
     //read(filename, buffer, number of char bytes)
     
 
-}
+}*/
 
 
 void word_wrap(int filename, char *buffer, int columns){
@@ -181,6 +182,7 @@ int main(int argc, char** argv) {
     int fp = open(argv[2], O_RDONLY);
     word_wrap(fp, buffer, columns);
     free(buffer);
+    printf("\n");
 
 
     // read one character at a time
@@ -205,3 +207,4 @@ use char buffer array (put it as second argument in read())
 - once bufferarray is full AND/OR word cannot fit in bufferarray, start a new line 
 - use fseek(filename, charposition, SEEK_SET)
 - PRINT TO STANDARD OUTPUT!!!
+*/
