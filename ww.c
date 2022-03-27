@@ -10,42 +10,12 @@
 
 #define size INT_MAX
 
-/*inline int word_length(const char *str){
-    int getIndex = 0;
-    while(str[getIndex]! = 0 && str[getIndex] ! = '' && str[getIndex]! = '\n'){
-        getIndex++;
-    }
-    return(getIndex);
-}*/
-
-
-/*void word_wrap2(char *s, const int newline){
-    int length;
-    int w;
-    int word_length = 0;
-    int ouput_length = 0;
-    int line_position = 0;
-
-    for(length = 0; str[length]; length++)
-
-    char word[length];
-
-    for(w = 0; w<=length; n++){
-        if(str[w] == '\n' || str[w] == '' || w = length ){
-         
-            }
-        }
-    }
-    //read(filename, buffer, number of char bytes)
-    
-
-}*/
-
 
 void word_wrap(int filename, char *buffer, char *temp, int columns){
     int i;
     int counter = 0;
     int arrayIndex = -1;
+    //int bytePosition;
     //char *temp = (char*)malloc((columns+1) * sizeof(char));
 
     ssize_t checkEOF;
@@ -58,6 +28,7 @@ void word_wrap(int filename, char *buffer, char *temp, int columns){
             checkEOF = read(filename, &buffer[0], 1);
             temp[i] = buffer[0];    //so we dont rely on buffer length for wrapping
             buffer[0] = '\0';
+            //printf("%c", temp[i]);
             arrayIndex++;
             
             //if you reach end of file
@@ -87,6 +58,8 @@ void word_wrap(int filename, char *buffer, char *temp, int columns){
                     if (i != columns+1){
                         checkEOF = read(filename, &buffer[0], 1); //MAKE SURE THIS ONLY HAPPENS IF IT HASNT GONE PAST 
                         temp[i+1] = buffer[0];
+                        //printf("%c", temp[i]);
+                        arrayIndex++;
                         //printf(" %c ", temp[i+1]);
                     }
                     break;
@@ -100,15 +73,6 @@ void word_wrap(int filename, char *buffer, char *temp, int columns){
         }
         //printf(" last char: %c ", buffer[columns]); 
 
-        /*for (i = 0; i < arrayIndex+1; i++){
-            if (buffer[i] == '\n'){
-                if (i > 0 && isalnum(buffer[i-1]) == 1 && isalnum(buffer[i+1]) == 1){
-                    //printf("inside");
-                    buffer[i] = ' ';
-                }
-            }
-        }*/
-
 
         if (temp[arrayIndex] == ' ' || temp[arrayIndex] == '\n'){
             for (i = 0; i < arrayIndex+1; i++){
@@ -118,8 +82,9 @@ void word_wrap(int filename, char *buffer, char *temp, int columns){
             printf("\n");
             counter = 0;
         }
-        //else if (strcmp(&buffer[columns-1], " ") == 0 || buffer[columns-1] == '\n'){
+        
         else if(temp[arrayIndex-1] == ' ' || temp[arrayIndex-1] == '\n'){
+        //if(temp[arrayIndex-1] == ' ' || temp[arrayIndex-1] == '\n'){
             //printf("arrayindex %d", arrayIndex);
             for (i = 0; i < arrayIndex; i++){
                 printf("%c", temp[i]);
@@ -150,21 +115,13 @@ void word_wrap(int filename, char *buffer, char *temp, int columns){
             }
             printf("\n");
 
-            //move pointer in file to where we last printed
-            //printf("%d", counter);
-            //lseek(filename, -(counter+1), SEEK_CUR); //2nd argument should be -counter
-
-            //empty the buffer array
-            //for (i = 0; i < columns+1; i++){
-                //buffer[i] = '\0';
-            //}
-            //read(filename, &buffer[0], 1);
-            //printf("%c\n", buffer[0]);
         }
-        lseek(filename, -(counter), SEEK_CUR); //2nd argument should be -counter
+        //bytePosition = lseek(filename, -(counter), SEEK_CUR); 
+        lseek(filename, -(counter), SEEK_CUR);
+        //printf(" %d ", bytePosition);
         //printf(" char %c", buffer[arrayIndex]);
 
-            //empty the buffer array
+        //empty the buffer array
         for (i = 0; i < arrayIndex+1; i++){
             temp[i] = '\0';
         }
