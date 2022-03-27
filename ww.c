@@ -15,7 +15,6 @@ void word_wrap(int filename, char *buffer, char *temp, int columns){
     int i;
     int counter = 0;
     int arrayIndex = -1;
-    ssize_t s = 0;
     //int bytePosition;
 
     ssize_t checkEOF;
