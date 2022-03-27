@@ -16,7 +16,6 @@ void word_wrap(int filename, char *buffer, char *temp, int columns){
     int counter = 0;
     int arrayIndex = -1;
     //int bytePosition;
-    //char *temp = (char*)malloc((columns+1) * sizeof(char));
 
     ssize_t checkEOF;
 
@@ -33,17 +32,11 @@ void word_wrap(int filename, char *buffer, char *temp, int columns){
             
             //if you reach end of file
             if (checkEOF == 0){
-                printf("%lu", checkEOF);
-                printf("%c", temp[i]);
-                //free(temp);
+                printf("%s", temp);
+                //break;
                 return;
             }
             
-            //if (i == 0){
-                //if (buffer[i] == '\n'){
-                    //printf("\n");
-                //}
-            //}
             //printf("%c", buffer[i]);
             //to ensure that we dont have consecutive spaces
             if (i > 0){
@@ -69,9 +62,10 @@ void word_wrap(int filename, char *buffer, char *temp, int columns){
                     temp[i] = ' ';
                 }
                 
+                
             }
         }
-        //printf(" last char: %c ", buffer[columns]); 
+        //printf("%c", *temp); 
 
 
         if (temp[arrayIndex] == ' ' || temp[arrayIndex] == '\n'){
@@ -97,12 +91,10 @@ void word_wrap(int filename, char *buffer, char *temp, int columns){
             //go backwards in buffer array until we reach a white space
             //then replace the characters after the white space at the beginning of the buffer array
             int index = arrayIndex;
-            //printf("%d\n", index);
-            //printf("%d", index);
             counter = 0;    //counts the characters after the whitespace we are printing till
 
             //gets index of what we are printing to in buffer array
-            while (temp[index] != ' '){
+            while (temp[index] != ' ' && index != 0){
                 index--;
                 counter++;
             }
@@ -118,14 +110,13 @@ void word_wrap(int filename, char *buffer, char *temp, int columns){
         }
         //bytePosition = lseek(filename, -(counter), SEEK_CUR); 
         lseek(filename, -(counter), SEEK_CUR);
-        //printf(" %d ", bytePosition);
-        //printf(" char %c", buffer[arrayIndex]);
 
         //empty the buffer array
         for (i = 0; i < arrayIndex+1; i++){
             temp[i] = '\0';
         }
         //printf("new: %c!", temp[0]);
+
     }
 
 }
