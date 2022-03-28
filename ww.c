@@ -7,10 +7,12 @@
 #include <dirent.h>
 #include <ctype.h>
 #include <limits.h>
+#include <sys/stat.h>
+
 
 #define size INT_MAX
 
-
+int fileOpen(char* readFile, char* word_wrap);
 void word_wrap(int filename, char *buffer, char *temp, int columns){
     int i;
     int counter = 0;
@@ -121,6 +123,40 @@ void word_wrap(int filename, char *buffer, char *temp, int columns){
 
 }
 
+int fileOpen (char* readFile, char* word_wrap){
+    int bytes;
+    char buffer[BUFFERSIZE];
+    
+    if(readFile != NULL){
+        int fd = open(readFile, O_RDWR);
+        
+        if(fd == -1){
+            perror(readFile);
+            return EXIT_FAILURE;
+        }
+        
+        bytes = read(fd, buffer, BUFFERSIZE);
+        close(fd);
+    }
+    else
+    {
+        bytes = read(0, buffer, BUFFERSIZE);
+    }
+    
+    if(bytes == 0){
+        printf("ERROR: NOTHING IN FILE.");
+        return EXIT_FAILURE;
+    }
+    
+    else if(bbytes < 0)
+    {
+        perror("Error");
+        return EXIT_FAILURE;
+    }
+    
+    word_wrap(filename, colums, bytes, temp, buffer);
+    return EXIT_SUCCESS;
+
 int main(int argc, char** argv) {
 
 
@@ -139,6 +175,19 @@ int main(int argc, char** argv) {
     //buffer[0] = 't';
     //buffer[1] = 's';
     //printf("%c", buffer[1]);
+    
+    if(argc == 2)
+    {
+       fileOpen(NULL, NULL);
+       return EXIT_SUCCESS;
+    }
+    
+    if(argc < 2) return EXIT_FAILURE;
+    columns = atoi(argv[1]);
+    
+    
+    fileOpen(argv[2], NULL);
+    return EXIT_SUCCESS:
     
     int fp = open(argv[2], O_RDONLY);
     word_wrap(fp, buffer, temp, columns);
