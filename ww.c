@@ -17,6 +17,8 @@ void word_wrap(int filename, char *buffer, char *temp, int columns, int output_t
     int i;
     int counter = 0;
     int arrayIndex = -1;
+    int i_val = 0;
+    int length = 0;
     //int bytePosition;
     int write_to;
     if (filename == 0 || output_type == 0){
@@ -31,12 +33,15 @@ void word_wrap(int filename, char *buffer, char *temp, int columns, int output_t
     ssize_t checkEOF;
 
     while(1){
+        arrayIndex = counter-1;
         counter = 0;
-        arrayIndex = -1;
+        //arrayIndex = -1;
         //using columns+1 to see if we cut a word in half or not
-        for (i = 0; i < (columns+1); i++){
+        for (i = i_val; i < (columns+1); i++){
+            //printf("(I = %d)", i_val);
             checkEOF = read(filename, &buffer[0], 1);
             temp[i] = buffer[0];    //so we dont rely on buffer length for wrapping
+            //printf("(char:%c)", temp[i]);
             buffer[0] = '\0';
             //printf("%c", temp[i]);
             arrayIndex++;
@@ -52,14 +57,14 @@ void word_wrap(int filename, char *buffer, char *temp, int columns, int output_t
             //to ensure that we dont have consecutive spaces
             if (i > 0){
                 //check for double space
-                if (temp[i] == ' ' && temp[i-1] == ' '){
+                /*if (temp[i] == ' ' && temp[i-1] == ' '){
                     temp[i] = '\0';   //makes sure there is only one space
                     i--;
                     arrayIndex--;
                 }
                 if (temp[i] == '\n' && temp[i-1] == ' '){
                     //printf("CHECK");
-                    if (i != columns+1){
+                    if (i < columns){
                         checkEOF = read(filename, &buffer[0], 1); //MAKE SURE THIS ONLY HAPPENS IF IT HASNT GONE PAST 
                         temp[i+1] = buffer[0];
                         //printf("%c", temp[i]);
@@ -71,12 +76,29 @@ void word_wrap(int filename, char *buffer, char *temp, int columns, int output_t
                 else if (temp[i] == '\n' && temp[i-1] != '\n'){
                     //printf("CHECK");
                     temp[i] = ' ';
+                }*/
+
+                if (temp[i] == '\n' && temp[i-1] == '\n'){
+                    //printf("CHECK");
+                    //printf("INSIDE");
+                    write(1,"\n", 1);
+                    break;
+                }
+                if (temp[i] == ' ' && temp[i-1] == ' '){
+                    temp[i] = '\0';   //makes sure there is only one space
+                    i--;
+                    arrayIndex--;
+                    //printf("INSIDE");
+                }
+                if (temp[i] == '\n' && temp[i-1] != '\n'){
+                    //printf("CHECK");
+                    temp[i] = ' ';
+                    printf("INSIDE");
                 }
                 
                 
             }
         }
-        //printf("%c", *temp); 
 
 
         if (temp[arrayIndex] == ' ' || temp[arrayIndex] == '\n'){
@@ -87,6 +109,7 @@ void word_wrap(int filename, char *buffer, char *temp, int columns, int output_t
             //printf("%c", *buffer);
             //printf("\n");
             write(1, "\n", 1);
+
             counter = 0;
         }
         
@@ -101,6 +124,7 @@ void word_wrap(int filename, char *buffer, char *temp, int columns, int output_t
             //printf("\n");
             write(write_to, "\n", 1);
             counter = 1;
+            //printf("CHECK");
         }
         else{   //stops in the middle of a word
             //go backwards in buffer array until we reach a white space
@@ -109,16 +133,16 @@ void word_wrap(int filename, char *buffer, char *temp, int columns, int output_t
             counter = 0;    //counts the characters after the whitespace we are printing till
 
             //gets index of what we are printing to in buffer array
-            while (temp[index] != ' ' && index != 0){
+            while (temp[index] != ' ' && index != 0 && temp[index] != '\n'){
                 index--;
                 counter++;
+                //printf(" ' ");
             }
-            //printf("%d", index);
 
             //print characters
             //printf("%d\n", index);
             for (i = 0; i <= index; i++){
-                //printf("%c", temp[i]);
+                //printf("(%d)", index);
                 write(write_to, &temp[i], 1);
             }
             //printf("\n");
@@ -126,15 +150,26 @@ void word_wrap(int filename, char *buffer, char *temp, int columns, int output_t
 
         }
         //bytePosition = lseek(filename, -(counter), SEEK_CUR); 
-        lseek(filename, -(counter), SEEK_CUR);
+        //lseek(filename, -(counter), SEEK_CUR);
+
+        //printf("(counter: %d)", counter);
+        //printf("(%d)", counter);
+        length = columns+1 - counter;
+        //printf("%d ", length);
+        for (i = 0; i < counter; i++){
+            temp[i] = temp[length + i];
+        }
 
         //empty the buffer array
-        for (i = 0; i < arrayIndex+1; i++){
+        for (i = counter; i < arrayIndex+1; i++){
             temp[i] = '\0';
         }
+        //printf("(%s)", temp);
+        i_val = counter;
         //printf("new: %c!", temp[0]);
 
     }
+    write(1, "\n", 1);
 
 }
 
@@ -195,7 +230,6 @@ int main(int argc, char** argv) {
             //go into and wordwrap for each file
             DIR *directory = opendir(argv[2]);
             struct dirent *file;
-            //char filename[255];
             while ((file = readdir(directory)) != NULL){
                 //printf("INSIDE WHILE LOOP");
                 printf("%s\n", file->d_name);
@@ -215,7 +249,7 @@ int main(int argc, char** argv) {
                 
             }
             closedir(directory);
-            printf("done");
+            //printf("done");
         }
         else if (S_ISREG(file_stat.st_mode) != 0){
             //word wrap with file- regular
