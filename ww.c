@@ -12,12 +12,21 @@
 
 #define size INT_MAX
 
-int fileOpen(char* readFile, char* word_wrap);
-void word_wrap(int filename, char *buffer, char *temp, int columns){
+//int fileOpen(char* readFile, char* word_wrap);
+void word_wrap(int filename, char *buffer, char *temp, int columns, int output_type){
     int i;
     int counter = 0;
     int arrayIndex = -1;
     //int bytePosition;
+    int write_to;
+    if (filename == 0 || output_type == 0){
+        write_to = 1;
+    }
+    //else{   //write to file
+        //write_to = filename (in int form)
+    //}
+
+    //read() and write() 0 for read from stdin, 1 for write to stdout, filename for file
 
     ssize_t checkEOF;
 
@@ -72,10 +81,12 @@ void word_wrap(int filename, char *buffer, char *temp, int columns){
 
         if (temp[arrayIndex] == ' ' || temp[arrayIndex] == '\n'){
             for (i = 0; i < arrayIndex+1; i++){
-                printf("%c", temp[i]);
+                //printf("%c", temp[i]);
+                write(write_to, &temp[i], 1);
             }
             //printf("%c", *buffer);
-            printf("\n");
+            //printf("\n");
+            write(1, "\n", 1);
             counter = 0;
         }
         
@@ -83,10 +94,12 @@ void word_wrap(int filename, char *buffer, char *temp, int columns){
         //if(temp[arrayIndex-1] == ' ' || temp[arrayIndex-1] == '\n'){
             //printf("arrayindex %d", arrayIndex);
             for (i = 0; i < arrayIndex; i++){
-                printf("%c", temp[i]);
+                //printf("%c", temp[i]);
+                write(write_to, &temp[i], 1);
             }
             //printf("%c", *buffer);
-            printf("\n");
+            //printf("\n");
+            write(write_to, "\n", 1);
             counter = 1;
         }
         else{   //stops in the middle of a word
@@ -105,9 +118,11 @@ void word_wrap(int filename, char *buffer, char *temp, int columns){
             //print characters
             //printf("%d\n", index);
             for (i = 0; i <= index; i++){
-                printf("%c", temp[i]);
+                //printf("%c", temp[i]);
+                write(write_to, &temp[i], 1);
             }
-            printf("\n");
+            //printf("\n");
+            write(write_to, "\n", 1);
 
         }
         //bytePosition = lseek(filename, -(counter), SEEK_CUR); 
@@ -123,7 +138,7 @@ void word_wrap(int filename, char *buffer, char *temp, int columns){
 
 }
 
-int fileOpen (char* readFile, char* word_wrap){
+/*int fileOpen (char* readFile, char* word_wrap){
     int bytes;
     char buffer[BUFFERSIZE];
     
@@ -156,7 +171,7 @@ int fileOpen (char* readFile, char* word_wrap){
     
     word_wrap(filename, colums, bytes, temp, buffer);
     return EXIT_SUCCESS;
-}
+}*/
 
 
 int main(int argc, char** argv) {
@@ -167,6 +182,8 @@ int main(int argc, char** argv) {
     //MAKE BUFFER LENGTH MACRO- FIX!
     buffer = (char*)malloc(size * sizeof(char));
     char *temp = (char*)malloc((columns+1) * sizeof(char));
+    char filename[255];
+    int output_type;     //0 means write to stdout, 1 means write to file
 
     struct stat file_stat;
     if (argc == 3){
@@ -174,13 +191,13 @@ int main(int argc, char** argv) {
         //check if argv[2] is file or directory
         if (S_ISDIR(file_stat.st_mode) != 0){
             //it is directory
+            output_type = 1;
             //go into and wordwrap for each file
             DIR *directory = opendir(argv[2]);
             struct dirent *file;
             //char filename[255];
             while ((file = readdir(directory)) != NULL){
                 //printf("INSIDE WHILE LOOP");
-                //char filename[255];
                 printf("%s\n", file->d_name);
 
                 //GIVING INFINITE LOOP!!- FIX
@@ -189,7 +206,7 @@ int main(int argc, char** argv) {
                     strncpy(filename, file->d_name, 254);
                     filename[254-1] = '\0';
                     int fp = open(filename, O_RDONLY);
-                    word_wrap(fp, buffer, temp, columns);
+                    word_wrap(fp, buffer, temp, columns, output_type);
                     close(fp);
                     //return 0;
                 }
@@ -202,12 +219,18 @@ int main(int argc, char** argv) {
         }
         else if (S_ISREG(file_stat.st_mode) != 0){
             //word wrap with file- regular
+            output_type = 0;
             int fp = open(argv[2], O_RDONLY);
-            word_wrap(fp, buffer, temp, columns);
+            word_wrap(fp, buffer, temp, columns, output_type);
             printf("\n");
             close(fp);
             
         }
+    }
+    else if (argc == 2){    //no filename given, read from stdin
+        output_type = 0;
+        word_wrap(0, buffer, temp, columns, output_type);
+
     }
     free(buffer);
     free(temp);
@@ -224,7 +247,7 @@ int main(int argc, char** argv) {
     //buffer[1] = 's';
     //printf("%c", buffer[1]);
     
-    if(argc == 2)
+    /*if(argc == 2)
     {
        fileOpen(NULL, NULL);
        return EXIT_SUCCESS;
@@ -241,7 +264,7 @@ int main(int argc, char** argv) {
     word_wrap(fp, buffer, temp, columns);
     free(buffer);
     free(temp);
-    printf("\n");
+    printf("\n");*/
 
 
 
