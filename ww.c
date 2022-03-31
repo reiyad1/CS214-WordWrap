@@ -223,6 +223,14 @@ int main(int argc, char** argv) {
     struct stat file_stat;
     if (argc == 3){
         stat(argv[2], &file_stat);
+        if(stat(argv[2], &file_stat) == -1){
+            perror("stat");
+            exit(1);
+        }
+
+        if((file_stat.st_mode & S_IFMT) == S_IFDIR){
+            printf("Directory\n");
+        }
         //check if argv[2] is file or directory
         if (S_ISDIR(file_stat.st_mode) != 0){
             //it is directory
@@ -240,6 +248,11 @@ int main(int argc, char** argv) {
                     strncpy(filename, file->d_name, 254);
                     filename[254-1] = '\0';
                     int fp = open(filename, O_RDONLY);
+                    if (fp == -1)
+                    {
+                        perror(filename); 
+                        return EXIT_FAILURE;
+                    } 
                     word_wrap(fp, buffer, temp, columns, output_type);
                     close(fp);
                     //return 0;
@@ -255,6 +268,11 @@ int main(int argc, char** argv) {
             //word wrap with file- regular
             output_type = 0;
             int fp = open(argv[2], O_RDONLY);
+            if (fp == -1)
+            {
+                perror(filename); 
+                return EXIT_FAILURE;
+            } 
             word_wrap(fp, buffer, temp, columns, output_type);
             printf("\n");
             close(fp);
