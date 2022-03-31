@@ -48,7 +48,7 @@ void word_wrap(int filename, char *buffer, char *temp, int columns, int output_t
             
             //if you reach end of file
             if (checkEOF == 0){
-                printf("%s", temp);
+                printf("%s", temp); //CHANGE TO WRITE SOMEHOW!!
                 //break;
                 return;
             }
