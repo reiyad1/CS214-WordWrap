@@ -12,7 +12,6 @@
 
 #define size INT_MAX
 
-//int fileOpen(char* readFile, char* word_wrap);
 int word_wrap(int filename, char *buffer, char *temp, int columns, int output_type){
     int i;
     int counter = 0;
@@ -53,7 +52,6 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
                 return ret_statement;
             }
             
-            //printf("%c", buffer[i]);
             //to ensure that we dont have consecutive spaces
             if (i > 0){
 
@@ -108,7 +106,6 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
         //when word fits perfectly
         if (temp[arrayIndex] == ' '){
             for (i = 0; i < arrayIndex; i++){
-                //printf("%c", temp[i]);
                 write(write_to, &temp[i], 1);
             }
             write(write_to, "\n", 1);
@@ -117,7 +114,6 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
         else if (temp[arrayIndex] == '\n' && check_line_line == 0){
             temp[arrayIndex] = ' ';
             for (i = 0; i < arrayIndex; i++){
-                //printf("%c", temp[i]);
                 write(write_to, &temp[i], 1);
             }
             write(write_to, "\n", 1);
@@ -183,45 +179,6 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
 
 }
 
-/*int fileOpen (char* readFile, char* word_wrap){
-    int bytes;
-    char buffer[BUFFERSIZE];
-    
-    if(readFile != NULL){
-        int fd = open(readFile, O_RDWR);
-        
-        if(fd == -1){
-            perror(readFile);
-            return EXIT_FAILURE;
-        }
-        
-        bytes = read(fd, buffer, BUFFERSIZE);
-        close(fd);
-    }
-    else
-    {
-        bytes = read(0, buffer, BUFFERSIZE);
-    }
-    
-    if(bytes == 0){
-        printf("ERROR: NOTHING IN FILE.");
-        return EXIT_FAILURE;
-    }
-    
-    else if(bbytes < 0)
-    {
-        perror("Error");
-        return EXIT_FAILURE;
-    }
-    
-    word_wrap(filename, colums, bytes, temp, buffer);
-    return EXIT_SUCCESS;
-}*/
-
-/*int searchDir(DIR *directory, dirent *filename){
-    while ((file = readdir(directory)) != NULL){
-        if (file->d_name == filename)
-}*/
 
 
 int main(int argc, char** argv) {
@@ -229,44 +186,35 @@ int main(int argc, char** argv) {
     if (argc < 2)
         return EXIT_FAILURE;
     int columns = atoi(argv[1]);
-    //buffer array
-    char* buffer;
-    //MAKE BUFFER LENGTH MACRO- FIX!
+    char* buffer;   //buffer array
     buffer = (char*)malloc(size * sizeof(char));
     char *temp = (char*)malloc((size) * sizeof(char));
-    //char filename[255];
-    int output_type;     //0 means write to stdout, 1 means write to file
+    
+    int output_type;  //0 means write to stdout, 1 means write to file
 
-    //struct stat file_stat;
+
     if (argc == 3){
         struct stat file_stat;
-        //printf("IN2\n");
+
         stat(argv[2], &file_stat);
         if(stat(argv[2], &file_stat) == -1){
             perror(argv[2]);
+            free(buffer);
+            free(temp);
             return EXIT_FAILURE;
         }
 
-        //if((file_stat.st_mode & S_IFMT) == S_IFDIR){
-            //printf("Directory\n");
-        //}
+
         //check if argv[2] is file or directory
         if (S_ISDIR(file_stat.st_mode) != 0){
-            //printf("IN");
             //it is directory
             output_type = 1;
+
             //go into and wordwrap for each file
             DIR *directory = opendir(argv[2]);
             struct dirent *file;
             while ((file = readdir(directory)) != NULL){
-                //printf("INSIDE WHILE LOOP");
-                //printf("%s\n", file->d_name);
-
-                //FIX
                 if (file->d_type == DT_REG && (strcmp(file->d_name, ".")!=0) && (strcmp(file->d_name, "..")!=0)){
-                    //printf("INSIDE FORLOOP");
-
-                    //int filecheck = searchDir(directory, file-)
                     
                     char filename[sizeof(argv[2]) + sizeof(file->d_name) + 3];
                     strcpy(filename, argv[2]);
@@ -275,53 +223,54 @@ int main(int argc, char** argv) {
                     int fp = open(filename, O_RDONLY);
                     if (fp == -1){
                         perror(filename); 
+                        free(buffer);
+                        free(temp);
                         return EXIT_FAILURE;
                     }
-                    //printf("nice");
                     char outputFile[sizeof(argv[2]) + sizeof(file->d_name) + 6];
+
+                    //if name of file contains "wrap", rewrite the file
                     if (strstr(file->d_name, "wrap") != NULL){
-                        printf("CHECK\n");
                         strcpy(outputFile, file->d_name);
                         output_type = open(outputFile, O_RDWR, 0666);
                     }
-                    //strcpy(outputFile, "CS214-WordWrap/");
+                    //name of file does not contain "wrap", create and write to new file
                     else{
                         strcpy(outputFile, argv[2]);
                         strcat(outputFile, "/wrap.");
                         strcat(outputFile, file->d_name);
                         output_type = open(outputFile, O_RDWR | O_CREAT, 0666);
                     }
-                    //printf("%s\n", outputFile);   //TEST
-                    //output_type = open(outputFile, O_RDWR | O_CREAT, 0666);
 
                     word_wrap(fp, buffer, temp, columns, output_type);
                     close(fp);
                     close(output_type);
-                    //return 0;
                 }
+                //ignores the "." and ".." files
                 else if ((strcmp(file->d_name, ".")==0) && (strcmp(file->d_name, "..")==0))
                     continue;
                 
             }
             closedir(directory);
-            //printf("done");
         }
+        //if argv[2] is a regular file and NOT a directory
         else if (S_ISREG(file_stat.st_mode) != 0){
-            //word wrap with file- regular
             output_type = 0;
             int fp = open(argv[2], O_RDONLY);
             if (fp == -1)
             {
                 perror(argv[2]); 
+                free(buffer);
+                free(temp);
                 return EXIT_FAILURE;
             } 
             word_wrap(fp, buffer, temp, columns, output_type);
-            //printf("\n");
             close(fp);
             
         }
     }
-    else if (argc == 2){    //no filename given, read from stdin
+    //if no filename given, read from stdin
+    else if (argc == 2){
         output_type = 0;
         word_wrap(0, buffer, temp, columns, output_type);
 
@@ -329,60 +278,6 @@ int main(int argc, char** argv) {
     free(buffer);
     free(temp);
     return EXIT_SUCCESS;
-    //else if (argc == 2){
-        //stdin stdout wrap
-    //}
-
-
-
-
-
-    //printf("size %lu\n", sizeof(buffer));
-    //buffer[0] = 't';
-    //buffer[1] = 's';
-    //printf("%c", buffer[1]);
-    
-    /*if(argc == 2)
-    {
-       fileOpen(NULL, NULL);
-       return EXIT_SUCCESS;
-    }
-    
-    if(argc < 2) return EXIT_FAILURE;
-    columns = atoi(argv[1]);
-    
-    
-    fileOpen(argv[2], NULL);
-    return EXIT_SUCCESS:
-    
-    int fp = open(argv[2], O_RDONLY);
-    word_wrap(fp, buffer, temp, columns);
-    free(buffer);
-    free(temp);
-    printf("\n");*/
-
-
-
-    // read one character at a time
-/* while((ch = getc(fp)) != EOF)
-    {
-      //...
-    } 
-...
-int ReadFile(FILE* fp)
-{
-   //Do what you wish... :)
-  return getc(fp); 
-}  
-*/
 
 }
 
-/* PSEUDOCODE
-use char buffer array (put it as second argument in read())
-- read(filename, bufferarray, NULL/sizeofread)
-- bufferarray length will be length of desired columns
-- once bufferarray is full AND/OR word cannot fit in bufferarray, start a new line 
-- use fseek(filename, charposition, SEEK_SET)
-- PRINT TO STANDARD OUTPUT!!!
-*/
