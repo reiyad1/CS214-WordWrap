@@ -27,7 +27,7 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
         write_to = 1;
     }
     //else{   //write to file
-        //write_to = filename (in int form)
+        //write_to = output_type filename (in int form)
     //}
 
     //read() and write() 0 for read from stdin, 1 for write to stdout, filename for file
@@ -51,7 +51,9 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
             
             //if you reach end of file
             if (checkEOF == 0){
-                printf("%s", temp); //CHANGE TO WRITE SOMEHOW!!
+                //printf("%s", temp); //CHANGE TO WRITE SOMEHOW!!
+                for (i = 0; i < arrayIndex+1; i++)
+                    write(write_to, &temp[i], 1);
                 //break;
                 ret_statement = 0;
                 return ret_statement;
@@ -284,28 +286,33 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
 
 int main(int argc, char** argv) {
     
+    if (argc < 2)
+        return EXIT_FAILURE;
     int columns = atoi(argv[1]);
     //buffer array
     char* buffer;
     //MAKE BUFFER LENGTH MACRO- FIX!
     buffer = (char*)malloc(size * sizeof(char));
     char *temp = (char*)malloc((size) * sizeof(char));
-    char filename[255];
+    //char filename[255];
     int output_type;     //0 means write to stdout, 1 means write to file
 
-    struct stat file_stat;
+    //struct stat file_stat;
     if (argc == 3){
-        //stat(argv[2], &file_stat);
+        struct stat file_stat;
+        //printf("IN2\n");
+        stat(argv[2], &file_stat);
         if(stat(argv[2], &file_stat) == -1){
-            perror("stat");
-            exit(1);
+            perror(argv[2]);
+            return EXIT_FAILURE;
         }
 
-        if((file_stat.st_mode & S_IFMT) == S_IFDIR){
-            printf("Directory\n");
-        }
+        //if((file_stat.st_mode & S_IFMT) == S_IFDIR){
+            //printf("Directory\n");
+        //}
         //check if argv[2] is file or directory
         if (S_ISDIR(file_stat.st_mode) != 0){
+            //printf("IN");
             //it is directory
             output_type = 1;
             //go into and wordwrap for each file
@@ -315,21 +322,34 @@ int main(int argc, char** argv) {
                 //printf("INSIDE WHILE LOOP");
                 //printf("%s\n", file->d_name);
 
-                //GIVING INFINITE LOOP!!- FIX
-                if (file->d_type == DT_REG && (strcmp(file->d_name, ".")!=0) && (strcmp(file->d_name, "..")!=0)){
-                    printf("INSIDE FORLOOP");
-                    strncpy(filename, file->d_name, 254);
-                    filename[254-1] = '\0';
+                //FIX
+                if (file->d_type == DT_REG && (strcmp(file->d_name, ".")!=0) && (strcmp(file->d_name, "..")!=0) && strcmp(file->d_name, "wrap")!=0){
+                    //printf("INSIDE FORLOOP");
+
+                    //strncpy(filename, file->d_name, 254);
+                    //filename[254-1] = '\0';
+                    char filename[sizeof(argv[2]) + sizeof(file->d_name) + 3];
+                    strcpy(filename, argv[2]);
+                    strcat(filename, "/");
+                    strcat(filename, file->d_name);
                     int fp = open(filename, O_RDONLY);
                     if (fp == -1){
                         perror(filename); 
                         return EXIT_FAILURE;
-                    } 
+                    }
+                    //printf("nice");
+                    char outputFile[sizeof(argv[2]) + sizeof(file->d_name) + 6];
+                    strcpy(outputFile, argv[2]);
+                    strcat(outputFile, "/wrap.");
+                    strcat(outputFile, file->d_name);
+                    printf("%s", outputFile);
+                    output_type = open(outputFile, O_WRONLY | O_CREAT);
                     word_wrap(fp, buffer, temp, columns, output_type);
                     close(fp);
+                    close(output_type);
                     //return 0;
                 }
-                else if ((strcmp(file->d_name, ".")!=0) && (strcmp(file->d_name, "..")!=0))
+                else if ((strcmp(file->d_name, ".")==0) && (strcmp(file->d_name, "..")==0))
                     continue;
                 
             }
@@ -342,7 +362,7 @@ int main(int argc, char** argv) {
             int fp = open(argv[2], O_RDONLY);
             if (fp == -1)
             {
-                perror(filename); 
+                perror(argv[2]); 
                 return EXIT_FAILURE;
             } 
             word_wrap(fp, buffer, temp, columns, output_type);
@@ -358,6 +378,7 @@ int main(int argc, char** argv) {
     }
     free(buffer);
     free(temp);
+    return EXIT_SUCCESS;
     //else if (argc == 2){
         //stdin stdout wrap
     //}
