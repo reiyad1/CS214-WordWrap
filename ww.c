@@ -26,9 +26,9 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
     if (filename == 0 || output_type == 0){
         write_to = 1;
     }
-    //else{   //write to file
-        //write_to = output_type filename (in int form)
-    //}
+    else{   //write to file
+        write_to = output_type; //filename (in int form)
+    }
 
     //read() and write() 0 for read from stdin, 1 for write to stdout, filename for file
 
@@ -38,23 +38,17 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
         arrayIndex = counter-1;
         counter = 0;
         check_line_line = 0;
-        //arrayIndex = -1;
         //using columns+1 to see if we cut a word in half or not
         for (i = i_val; i < (columns+1); i++){
-            //printf("(I = %d)", i_val);
             checkEOF = read(filename, &buffer[0], 1);
             temp[i] = buffer[0];    //so we dont rely on buffer length for wrapping
-            //printf("(char:%c)", temp[i]);
             buffer[0] = '\0';
-            //printf("%c", temp[i]);
             arrayIndex++;
             
             //if you reach end of file
             if (checkEOF == 0){
-                //printf("%s", temp); //CHANGE TO WRITE SOMEHOW!!
                 for (i = 0; i < arrayIndex+1; i++)
                     write(write_to, &temp[i], 1);
-                //break;
                 ret_statement = 0;
                 return ret_statement;
             }
@@ -62,32 +56,8 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
             //printf("%c", buffer[i]);
             //to ensure that we dont have consecutive spaces
             if (i > 0){
-                //check for double space
-                /*if (temp[i] == ' ' && temp[i-1] == ' '){
-                    temp[i] = '\0';   //makes sure there is only one space
-                    i--;
-                    arrayIndex--;
-                }
-                if (temp[i] == '\n' && temp[i-1] == ' '){
-                    //printf("CHECK");
-                    if (i < columns){
-                        checkEOF = read(filename, &buffer[0], 1); //MAKE SURE THIS ONLY HAPPENS IF IT HASNT GONE PAST 
-                        temp[i+1] = buffer[0];
-                        //printf("%c", temp[i]);
-                        arrayIndex++;
-                        //printf(" %c ", temp[i+1]);
-                    }
-                    break;
-                }
-                else if (temp[i] == '\n' && temp[i-1] != '\n'){
-                    //printf("CHECK");
-                    temp[i] = ' ';
-                }*/
 
                 if (temp[i] == '\n' && temp[i-1] == '\n'){
-                    //printf("CHECK");
-                    //printf("INSIDE");
-                    //write(1,"\n", 1);
                     arrayIndex--;
                     check_line_line = 1;
                     break;
@@ -96,13 +66,7 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
                     temp[i] = '\0';   //makes sure there is only one space
                     i--;
                     arrayIndex--;
-                    //printf("INSIDE");
                 }
-                /*if (temp[i] == '\n' && temp[i-1] != '\n'){
-                    //printf("CHECK");
-                    temp[i] = ' ';
-                    //printf("INSIDE");
-                }*/
                 
                 
             }
@@ -122,8 +86,8 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
                 break;
             }
         }
+
         if (too_big == 0){
-            //int k = 0;
             arrayIndex++;
             while (1){
                 read(filename, &buffer[0], 1);
@@ -141,53 +105,33 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
             ret_statement = 1;
         }
 
-
-
-
-
-        /*if (temp[arrayIndex] == ' ' || temp[arrayIndex] == '\n'){
-            for (i = 0; i < arrayIndex+1; i++){
-                //printf("%c", temp[i]);
-                write(write_to, &temp[i], 1);
-            }
-            //printf("%c", *buffer);
-            //printf("\n");
-            write(1, "\n", 1);
-
-            counter = 0;
-        }*/
-
+        //when word fits perfectly
         if (temp[arrayIndex] == ' '){
-            for (i = 0; i < arrayIndex+1; i++){
-                //printf("%c", temp[i]);
-                write(write_to, &temp[i], 1);
-            }
-            write(1, "\n", 1);
-            counter = 0;
-        }
-        else if (temp[arrayIndex] == '\n' && check_line_line == 0){
-            temp[arrayIndex] = ' ';
-            for (i = 0; i < arrayIndex+1; i++){
-                //printf("%c", temp[i]);
-                write(write_to, &temp[i], 1);
-            }
-            write(1, "\n", 1);
-            counter = 0;
-
-        }
-        
-        else if(temp[arrayIndex-1] == ' ' || temp[arrayIndex-1] == '\n'){
-        //if(temp[arrayIndex-1] == ' ' || temp[arrayIndex-1] == '\n'){
-            //printf("arrayindex %d", arrayIndex);
             for (i = 0; i < arrayIndex; i++){
                 //printf("%c", temp[i]);
                 write(write_to, &temp[i], 1);
             }
-            //printf("%c", *buffer);
-            //printf("\n");
+            write(write_to, "\n", 1);
+            counter = 0;
+        }
+        else if (temp[arrayIndex] == '\n' && check_line_line == 0){
+            temp[arrayIndex] = ' ';
+            for (i = 0; i < arrayIndex; i++){
+                //printf("%c", temp[i]);
+                write(write_to, &temp[i], 1);
+            }
+            write(write_to, "\n", 1);
+            counter = 0;
+
+        }
+        
+        else if((arrayIndex > 0) && ((temp[arrayIndex-1] == ' ') || (temp[arrayIndex-1] == '\n'))){
+            for (i = 0; i < arrayIndex; i++){
+                //printf("%c", temp[i]);
+                write(write_to, &temp[i], 1);
+            }
             write(write_to, "\n", 1);
             counter = 1;
-            //printf("CHECK");
         }
         else{   //stops in the middle of a word
             //go backwards in buffer array until we reach a white space
@@ -199,26 +143,19 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
             while (temp[index] != ' ' && index != 0 && temp[index] != '\n'){
                 index--;
                 counter++;
-                //printf(" ' ");
             }
 
-            //print characters
-            //printf("%d\n", index);
-            for (i = 0; i <= index; i++){
-                //printf("(%d)", index);
+            for (i = 0; i < index; i++){
                 write(write_to, &temp[i], 1);
             }
-            //printf("\n");
+            if (temp[index] == '\n'){
+                write(write_to, &temp[i+1], 1);
+            }
             write(write_to, "\n", 1);
 
         }
-        //bytePosition = lseek(filename, -(counter), SEEK_CUR); 
-        //lseek(filename, -(counter), SEEK_CUR);
 
-        //printf("(counter: %d)", counter);
-        //printf("(%d)", counter);
             length = columns+1 - counter;
-            //printf("%d ", length);
             for (i = 0; i < counter; i++){
                 temp[i] = temp[length + i];
             }
@@ -229,18 +166,16 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
             }
 
             if (temp[0] == ' '){
-                printf("HERE");
                 for (i = 1; i < arrayIndex+1; i++){
                     temp[i] = temp[i-1];
                 }
             }
-            //printf("(%s)", temp);
+
             i_val = counter;
-            //printf("new: %c!", temp[0]);
 
 
     }
-    write(1, "\n", 1);
+    write(write_to, "\n", 1);
     if (ret_statement == 1)
         return 1;
     else
@@ -283,6 +218,11 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
     return EXIT_SUCCESS;
 }*/
 
+/*int searchDir(DIR *directory, dirent *filename){
+    while ((file = readdir(directory)) != NULL){
+        if (file->d_name == filename)
+}*/
+
 
 int main(int argc, char** argv) {
     
@@ -323,11 +263,11 @@ int main(int argc, char** argv) {
                 //printf("%s\n", file->d_name);
 
                 //FIX
-                if (file->d_type == DT_REG && (strcmp(file->d_name, ".")!=0) && (strcmp(file->d_name, "..")!=0) && strcmp(file->d_name, "wrap")!=0){
+                if (file->d_type == DT_REG && (strcmp(file->d_name, ".")!=0) && (strcmp(file->d_name, "..")!=0)){
                     //printf("INSIDE FORLOOP");
 
-                    //strncpy(filename, file->d_name, 254);
-                    //filename[254-1] = '\0';
+                    //int filecheck = searchDir(directory, file-)
+                    
                     char filename[sizeof(argv[2]) + sizeof(file->d_name) + 3];
                     strcpy(filename, argv[2]);
                     strcat(filename, "/");
@@ -339,11 +279,21 @@ int main(int argc, char** argv) {
                     }
                     //printf("nice");
                     char outputFile[sizeof(argv[2]) + sizeof(file->d_name) + 6];
-                    strcpy(outputFile, argv[2]);
-                    strcat(outputFile, "/wrap.");
-                    strcat(outputFile, file->d_name);
-                    printf("%s", outputFile);
-                    output_type = open(outputFile, O_WRONLY | O_CREAT);
+                    if (strstr(file->d_name, "wrap") != NULL){
+                        printf("CHECK\n");
+                        strcpy(outputFile, file->d_name);
+                        output_type = open(outputFile, O_RDWR, 0666);
+                    }
+                    //strcpy(outputFile, "CS214-WordWrap/");
+                    else{
+                        strcpy(outputFile, argv[2]);
+                        strcat(outputFile, "/wrap.");
+                        strcat(outputFile, file->d_name);
+                        output_type = open(outputFile, O_RDWR | O_CREAT, 0666);
+                    }
+                    //printf("%s\n", outputFile);   //TEST
+                    //output_type = open(outputFile, O_RDWR | O_CREAT, 0666);
+
                     word_wrap(fp, buffer, temp, columns, output_type);
                     close(fp);
                     close(output_type);
