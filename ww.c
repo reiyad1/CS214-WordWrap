@@ -250,6 +250,7 @@ int main(int argc, char** argv) {
                 else if ((strcmp(file->d_name, ".")==0) && (strcmp(file->d_name, "..")==0))
                     continue;
                 
+                //else if its a subdirectory
             }
             closedir(directory);
         }
