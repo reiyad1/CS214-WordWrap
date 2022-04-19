@@ -179,7 +179,89 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
 
 }
 
+void listFilesRecursively(char *basePath)
+{
+    char path[1000];
+    struct dirent *dp;
+    DIR *dir = opendir(basePath);
 
+    // Unable to open directory stream
+    if (!dir)
+        return;
+
+    while ((dp = readdir(dir)) != NULL)
+    {
+        if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0)
+        {
+            printf("%s\n", dp->d_name);
+
+            // Construct new path from our base path
+            strcpy(path, basePath);
+            strcat(path, "/");
+            strcat(path, dp->d_name);
+
+            listFilesRecursively(path);
+        }
+    }
+
+    closedir(dir);
+}
+
+int main(int argc, char **argv)
+{
+  int nthreads, ret_val, tid, chunk_size;
+  void *status;
+  FILE *fp;
+  pthread_t *threads;
+
+  struct to_read data;
+
+  fp = fopen("file.txt", "r");
+  
+  if (fp==NULL)
+    {
+      perror("Could not open file. Exiting");
+      exit(1);
+    }
+
+  printf("Enter the number of threads: ");
+  scanf("%d",&nthreads);
+  threads = malloc(nthreads*sizeof(pthread_t));
+
+  
+  chunk_size = /nthreads;
+
+  for(tid = 0; tid < nthreads-1; tid++)
+    {
+      data.fp=fp;
+      data.offset = chunk_size;
+      data.start = tid*chunk_size+1;
+      ret_val = pthread_create(&threads[tid], NULL, &word_freq, &data);
+      
+      if(ret_val!= 0) {
+        printf ("Create pthread error!\n");
+        exit (1);
+      }
+      pthread_join(threads[tid],&status);
+    }
+
+  /*last thread process the chunk_size bytes + any remaining over*/
+  data.fp=fp;
+  data.offset = chunk_size + (13219 % nthreads);
+  data.start = (nthreads-1)*chunk_size+1;
+  ret_val = pthread_create(&threads[nthreads-1], NULL, &word_freq, &data);
+      
+  if(ret_val!= 0) {
+    printf ("Create pthread error!\n");
+    exit (1);
+  }
+
+
+  fclose(fp);
+  free(threads);
+
+  pthread_exit(NULL);
+  return 0; 
 
 int main(int argc, char** argv) {
     
