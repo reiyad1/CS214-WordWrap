@@ -236,7 +236,7 @@ void wrapFilesRecursively(char *argumentTwo, char *basePath, char *buffer, char 
             strcat(path, "/");
             strcat(path, dp->d_name);
 
-            wrapFilesRecursively(path, buffer, temp, columns);
+            wrapFilesRecursively(argumentTwo, path, buffer, temp, columns);
         }
         /*if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0)
         {
