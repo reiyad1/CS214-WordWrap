@@ -179,7 +179,7 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
 
 }
 
-wrapInDirectory(char *argumentTwo, struct dirent *file, char *buffer, char *temp, int columns, int output_type){
+int wrapInDirectory(char *argumentTwo, struct dirent *file, char *buffer, char *temp, int columns, int output_type){
     char filename[sizeof(argumentTwo) + sizeof(file->d_name) + 3];
     strcpy(filename, argumentTwo);
     strcat(filename, "/");
@@ -209,6 +209,7 @@ wrapInDirectory(char *argumentTwo, struct dirent *file, char *buffer, char *temp
     word_wrap(fp, buffer, temp, columns, output_type);
     close(fp);
     close(output_type);
+    return EXIT_SUCCESS;
 }
 
 void wrapFilesRecursively(char *argumentTwo, char *basePath, char *buffer, char *temp, int columns)
@@ -219,7 +220,7 @@ void wrapFilesRecursively(char *argumentTwo, char *basePath, char *buffer, char 
 
     // Unable to open directory stream
     if (!dir)
-        return;
+        return; //give error statement here
 
     while ((dp = readdir(dir)) != NULL)
     {
@@ -386,7 +387,7 @@ int main(int argc, char** argv) {
                 //else if its a subdirectory
                 else if(file->d_type == DT_DIR){
                     //call the function that does the recursive stuff
-                    char *basePath = file;
+                    char *basePath = file->d_name;
                     wrapFilesRecursively(argumentTwo, basePath, buffer, temp, columns);
 
                 }
