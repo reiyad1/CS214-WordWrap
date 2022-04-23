@@ -8,6 +8,7 @@
 #include <ctype.h>
 #include <limits.h>
 #include <sys/stat.h>
+#include <pthread.h>
 
 
 #define size INT_MAX
@@ -179,11 +180,14 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
 
 }
 
-int wrapInDirectory(char *argumentTwo, struct dirent *file, char *buffer, char *temp, int columns, int output_type){
-    char filename[sizeof(argumentTwo) + sizeof(file->d_name) + 3];
-    strcpy(filename, argumentTwo);
+int wrapInDirectory(char *basePath, char *file, char *buffer, char *temp, int columns, int output_type){
+    //char filename[sizeof(basePath) + sizeof(file) + 10];
+    char *filename;
+    filename = (char*)malloc(size * sizeof(char));
+
+    strcpy(filename, basePath);
     strcat(filename, "/");
-    strcat(filename, file->d_name);
+    strcat(filename, file);
     int fp = open(filename, O_RDONLY);
     if (fp == -1){
         perror(filename); 
@@ -191,24 +195,28 @@ int wrapInDirectory(char *argumentTwo, struct dirent *file, char *buffer, char *
         free(temp);
         return EXIT_FAILURE;
     }
-    char outputFile[sizeof(argumentTwo) + sizeof(file->d_name) + 6];
+    //char outputFile[sizeof(basePath) + sizeof(file) + 10];
+    char *outputFile;
+    outputFile = (char*)malloc(size * sizeof(char));
 
     //if name of file contains "wrap", rewrite the file
-    if (strstr(file->d_name, "wrap") != NULL){
-        strcpy(outputFile, file->d_name);
+    if (strstr(file, "wrap") != NULL){
+        strcpy(outputFile, file);
         output_type = open(outputFile, O_RDWR, 0666);
     }
     //name of file does not contain "wrap", create and write to new file
     else{
-        strcpy(outputFile, argumentTwo);
+        strcpy(outputFile, basePath);
         strcat(outputFile, "/wrap.");
-        strcat(outputFile, file->d_name);
+        strcat(outputFile, file);
         output_type = open(outputFile, O_RDWR | O_CREAT, 0666);
     }
 
     word_wrap(fp, buffer, temp, columns, output_type);
     close(fp);
     close(output_type);
+    free(filename);
+    free(outputFile);
     return EXIT_SUCCESS;
 }
 
@@ -219,8 +227,8 @@ void wrapFilesRecursively(char *argumentTwo, char *basePath, char *buffer, char 
     DIR *dir = opendir(basePath);
 
     // Unable to open directory stream
-    if (!dir)
-        return; //give error statement here
+    //if (!dir)
+        //return; //give error statement here
 
     while ((dp = readdir(dir)) != NULL)
     {
@@ -228,14 +236,19 @@ void wrapFilesRecursively(char *argumentTwo, char *basePath, char *buffer, char 
             //call word wrap
             //convert dp to int and open using open()
             //word_wrap(dp, buffer, temp, columns, 1);
-            wrapInDirectory(argumentTwo, dp, buffer, temp, columns, 1);
+            char *filename = dp->d_name;
+            printf("1%s\n", basePath);
+            printf("2%s\n", dp->d_name);
+
+            wrapInDirectory(basePath, filename, buffer, temp, columns, 1);
         }
-        else if (dp->d_type == DT_DIR){
+        else if (dp->d_type == DT_DIR && (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0)){
             //change basePath name to new subdirectory
             //recursively call function again
             strcpy(path, basePath);
             strcat(path, "/");
             strcat(path, dp->d_name);
+            printf("%s", path);
 
             wrapFilesRecursively(argumentTwo, path, buffer, temp, columns);
         }
@@ -253,6 +266,7 @@ void wrapFilesRecursively(char *argumentTwo, char *basePath, char *buffer, char 
     }
 
     closedir(dir);
+    return;
 
     //in the while loop, have if statements to see if its a file or another directory
         //if its a file, wrap and continue looking at the other stuff in the directory
@@ -319,7 +333,11 @@ int main(int argc, char** argv) {
     
     if (argc < 2)
         return EXIT_FAILURE;
-    int columns = atoi(argv[1]);
+    
+    int columns;
+    char *argumentTwo;
+    int is_recursive; //1 if yes, 0 if no
+    
     char* buffer;   //buffer array
     buffer = (char*)malloc(size * sizeof(char));
     char *temp = (char*)malloc((size) * sizeof(char));
@@ -327,9 +345,21 @@ int main(int argc, char** argv) {
     int output_type;  //0 means write to stdout, 1 means write to file
 
 
-    if (argc == 3){
+    if (argc > 2){
+        //printf("%d", argc);
         struct stat file_stat;
-        char *argumentTwo = argv[2];
+        if (argc == 3){
+            argumentTwo = argv[2];
+            columns = atoi(argv[1]);
+        }
+        else{
+            argumentTwo = argv[3];
+            columns = atoi(argv[2]);
+            is_recursive = 1;
+            //printf("IN\n");
+            //printf("%s\n", argumentTwo);
+        }
+        
         stat(argumentTwo, &file_stat);
         if(stat(argumentTwo, &file_stat) == -1){
             perror(argumentTwo);
@@ -342,18 +372,25 @@ int main(int argc, char** argv) {
         //check if argv[2] is file or directory
         if (S_ISDIR(file_stat.st_mode) != 0){
             //it is directory
+            //printf("is directory\n");
             output_type = 1;
 
             //go into and wordwrap for each file
             DIR *directory = opendir(argumentTwo);
             struct dirent *file;
             while ((file = readdir(directory)) != NULL){
+                //printf("%s\n", file->d_name);
+
                 if (file->d_type == DT_REG && (strcmp(file->d_name, ".")!=0) && (strcmp(file->d_name, "..")!=0)){
                     
+                    //printf("IN 1\n");
                     char filename[sizeof(argumentTwo) + sizeof(file->d_name) + 3];
                     strcpy(filename, argumentTwo);
                     strcat(filename, "/");
                     strcat(filename, file->d_name);
+
+                    //printf("%s\n", filename);
+
                     int fp = open(filename, O_RDONLY);
                     if (fp == -1){
                         perror(filename); 
@@ -381,18 +418,29 @@ int main(int argc, char** argv) {
                     close(output_type);
                 }
                 //ignores the "." and ".." files
-                else if ((strcmp(file->d_name, ".")==0) && (strcmp(file->d_name, "..")==0))
-                    continue;
+                //else if ((strcmp(file->d_name, ".")==0) && (strcmp(file->d_name, "..")==0))
+                    //continue;
                 
                 //else if its a subdirectory
-                else if(file->d_type == DT_DIR){
-                    //call the function that does the recursive stuff
-                    char *basePath = file->d_name;
-                    wrapFilesRecursively(argumentTwo, basePath, buffer, temp, columns);
+                else if(file->d_type == DT_DIR && is_recursive == 1){
+                    if ((strcmp(file->d_name, ".")!=0) && (strcmp(file->d_name, "..")!=0)){
+                    //else if (file->d_type == DT_DIR && (strcmp(&argv[1][0], "-") != 0 && strcmp(&argv[1][1], "r") != 0)){
+                        //call the function that does the recursive stuff
+                        char filename[sizeof(argumentTwo) + sizeof(file->d_name) + 3];
+                        strcpy(filename, argumentTwo);
+                        strcat(filename, "/");
+                        strcat(filename, file->d_name);
+                        printf("%s\n", filename);
+                        //char *basePath = file->d_name;  //ERROR- MUST BE TEST/SUB
+                        wrapFilesRecursively(argumentTwo, filename, buffer, temp, columns);
+                    }
 
                 }
+                else if ((strcmp(file->d_name, ".")==0) && (strcmp(file->d_name, "..")==0))
+                    continue;
                     
             }
+            printf("done\n");
             closedir(directory);
         }
         //if argv[2] is a regular file and NOT a directory
@@ -413,6 +461,7 @@ int main(int argc, char** argv) {
     }
     //if no filename given, read from stdin
     else if (argc == 2){
+        columns = atoi(argv[2]);
         output_type = 0;
         word_wrap(0, buffer, temp, columns, output_type);
 
