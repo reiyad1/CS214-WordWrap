@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS  = -g -Wall -Werror -fsanitize=address
+CFLAGS  = -g -Wall -Werror -fsanitize=address -pthread
 
 WW = ww
 
