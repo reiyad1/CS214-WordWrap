@@ -293,6 +293,9 @@ void *file_worker(void *arg){
     //run wordwrap function using struct
     //dequeue file path once done
 
+    //GRAB A FILE PATH FROM QUEUE, CHECK THAT IT OPENS, AND WORD WRAP IT
+    //I DONT THINK IT HAS TO BE THE EXACT ONE THAT WE JUST READ, IT SHOULD JUST BE ANY
+
     //extracts data to use in worker
     struct func_args *tempA = arg;
     //tempA->argumentTwo = arg->argumentTwo;
