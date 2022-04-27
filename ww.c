@@ -509,10 +509,6 @@ int main(int argc, char** argv) {
                     //printf("IN 1\n");
 
                     //add to file queue and make a thread to wrap what has been enqueued
-
-                    if (tid < N){
-                        pthread_create(&tid[i], NULL, )
-                    }
                     
                     //maybe dont call this since we are using threads
                     //wrapInDirectory(argumentTwo, file->d_name, buffer, temp, columns, output_type);
@@ -548,6 +544,12 @@ int main(int argc, char** argv) {
                         strcat(outputFile, file->d_name);
                         output_type = open(outputFile, O_RDWR | O_CREAT, 0666);
                     }
+                    
+                    //put file path in file queue
+                    //make thread for the file
+                    if (tid < N){
+                            pthread_create(&tid[i], NULL, )
+                    }
 
                     word_wrap(fp, buffer, temp, columns, output_type);
                     free(filename);
@@ -556,9 +558,8 @@ int main(int argc, char** argv) {
                     close(output_type);
 
                 }
-                //ignores the "." and ".." files
-                //else if ((strcmp(file->d_name, ".")==0) && (strcmp(file->d_name, "..")==0))
-                    //continue;
+                
+                    
                 
                 //else if its a subdirectory
                 //figure out how to do it for diff thread numbers!!!
