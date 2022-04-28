@@ -14,20 +14,17 @@
 #define size INT_MAX
 #define QUEUESIZE INT_MAX
 
+/*****************************************************************************/
 //to use in worker function for threading
-struct func_args{
-    char *argumentTwo;
-    char *basePath;
-    char *buffer;
-    char *temp;
-    int columns;
-    int output_type;
+struct cell{
+    char *file_path;
+    char *output_file_path;
 };
 
-
-struct queue{
+struct fileQueue{
     //int data[QUEUESIZE];
-    char data[QUEUESIZE];
+    //char data[QUEUESIZE];
+    struct cell data[QUEUESIZE];
     int start;
     int stop;
     int full;
@@ -36,7 +33,17 @@ struct queue{
     pthread_cond_t dequeue_ready;
 };
 
-int queue_init(struct queue *q){
+struct fileFunc_args{
+    struct fileQueue *q;
+    char *argumentTwo;
+    char *basePath;
+    char *buffer;
+    char *temp;
+    int columns;
+    int output_type;
+};
+
+int fileQueue_init(struct fileQueue *q){
     q->start = 0;
     q->stop = 0;
     q->full = 0;
@@ -46,12 +53,15 @@ int queue_init(struct queue *q){
     return 0;
 }
 
-int enqueue(char *n, struct queue *q){
+int fileEnqueue(char *file_path, char *output_file_path, struct fileQueue *q){
     pthread_mutex_lock(&q->lock);
     while (q->full){
         pthread_cond_wait(&q->enqueue_ready, &q->lock); //waits for enqueue to be ready and unlocks?- suspends current thread, releases lock,
     }
-    q->data[q->stop] = *n;
+    //q->data[q->stop] = *n;
+    q->data[q->stop].file_path = file_path;
+    q->data[q->stop].output_file_path = output_file_path;
+
     q->stop++;
     if (q->stop == QUEUESIZE) q->stop = 0;
     if (q->start == q->stop) q->full = 1;
@@ -60,19 +70,85 @@ int enqueue(char *n, struct queue *q){
     return 0;
 }
 
-int dequeue(char *n, struct queue *q){
+struct cell fileDequeue(struct fileQueue *q){
     pthread_mutex_lock(&q->lock);
+
     while (!q->full && q->start == q->stop){
         pthread_cond_wait(&q->dequeue_ready, &q->lock);
     }
-    *n = q->data[q->start];
+
+    struct cell *temporary;
+    temporary->file_path = q->data[q->start].file_path;
+    temporary->output_file_path = q->data[q->start].output_file_path;
+
     q->start++;
     if (q->start == QUEUESIZE) q->start = 0;
     q->full = 0;
     pthread_cond_signal(&q->enqueue_ready);
     pthread_mutex_unlock(&q->lock);
+    return *temporary;
+}
+/********************************************************************************/
+struct dirQueue{
+    char dirData[QUEUESIZE];
+    int start;
+    int stop;
+    int full;
+    pthread_mutex_t lock;
+    pthread_cond_t enqueue_ready; 
+    pthread_cond_t dequeue_ready;
+};
+struct dirFunc_args{
+    struct dirQueue *dq;
+    struct fileQueue *fq;
+    char *basePath;
+    char *buffer;
+    char *temp;
+    int columns;
+};
+int dirQueue_init(struct dirQueue *q){
+    q->start = 0;
+    q->stop = 0;
+    q->full = 0;
+    pthread_mutex_init(&q->lock, NULL);
+    pthread_cond_init(&q->enqueue_ready, NULL);
+    pthread_cond_init(&q->dequeue_ready, NULL);
     return 0;
 }
+int dirEnqueue(char *dir_path, struct dirQueue *q){
+    pthread_mutex_lock(&q->lock);
+    while (q->full){
+        pthread_cond_wait(&q->enqueue_ready, &q->lock); //waits for enqueue to be ready and unlocks?- suspends current thread, releases lock,
+    }
+    //q->data[q->stop] = *n;
+    q->dirData[q->stop] = *dir_path;
+
+    q->stop++;
+    if (q->stop == QUEUESIZE) q->stop = 0;
+    if (q->start == q->stop) q->full = 1;
+    pthread_cond_signal(&q->dequeue_ready);
+    pthread_mutex_unlock(&q->lock);
+    return 0;
+}
+
+char *dirDequeue(struct dirQueue *q){
+    pthread_mutex_lock(&q->lock);
+
+    while (!q->full && q->start == q->stop){
+        pthread_cond_wait(&q->dequeue_ready, &q->lock);
+    }
+
+    char *temp;
+    *temp = q->dirData[q->start];
+    q->start++;
+
+    if (q->start == QUEUESIZE) q->start = 0;
+    q->full = 0;
+    pthread_cond_signal(&q->enqueue_ready);
+    pthread_mutex_unlock(&q->lock);
+    return temp;
+}
+/********************************************************************************/
 
 int word_wrap(int filename, char *buffer, char *temp, int columns, int output_type){
     int i;
@@ -240,114 +316,7 @@ int word_wrap(int filename, char *buffer, char *temp, int columns, int output_ty
         return 0;
 
 }
-
-/*int wrapInDirectory(char *basePath, char *file, char *buffer, char *temp, int columns, int output_type){
-    //char filename[sizeof(basePath) + sizeof(file) + 10];
-    char *filename;
-    filename = (char*)malloc(size * sizeof(char));
-
-    strcpy(filename, basePath);
-    strcat(filename, "/");
-    strcat(filename, file);
-    int fp = open(filename, O_RDONLY);
-    if (fp == -1){
-        perror(filename);
-        free(buffer);
-        free(temp);
-        return EXIT_FAILURE;
-    }
-    //char outputFile[sizeof(basePath) + sizeof(file) + 10];
-    char *outputFile;
-    outputFile = (char*)malloc(size * sizeof(char));
-
-    //if name of file contains "wrap", rewrite the file
-    if (strstr(file, "wrap") != NULL){
-        strcpy(outputFile, file);
-        output_type = open(outputFile, O_RDWR, 0666);
-    }
-    //name of file does not contain "wrap", create and write to new file
-    else{
-        strcpy(outputFile, basePath);
-        strcat(outputFile, "/wrap.");
-        strcat(outputFile, file);
-        output_type = open(outputFile, O_RDWR | O_CREAT, 0666);
-    }
-
-    word_wrap(fp, buffer, temp, columns, output_type);
-    close(fp);
-    close(output_type);
-    free(filename);
-    free(outputFile);
-    return EXIT_SUCCESS;
-}*/
-
-//for threading directories
-void *dir_worker(void *arg){
-    //run wrapFilesRecursively using struct
-    //dequeue the subdirectory once done with the thread- figure out how to dequeue once it is done
-    return NULL;
-}
-
-//for threading files
-void *file_worker(void *arg){
-    //run wordwrap function using struct
-    //dequeue file path once done
-
-    //GRAB A FILE PATH FROM QUEUE, CHECK THAT IT OPENS, AND WORD WRAP IT
-    //I DONT THINK IT HAS TO BE THE EXACT ONE THAT WE JUST READ, IT SHOULD JUST BE ANY
-
-    //extracts data to use in worker
-    struct func_args *tempA = arg;
-    //tempA->argumentTwo = arg->argumentTwo;
-    //arg->basePath = file->d_name;
-    //tempA->buffer = arg->buffer;
-    //tempA->temp = arg->temp;
-    //tempA->columns = arg->columns;
-    //tempA->output_type = arg->output_type;
-
-    int fp = open(tempA->argumentTwo, O_RDONLY);
-        if (fp == -1){
-            perror(tempA->argumentTwo); 
-            free(tempA->buffer);
-            free(tempA->temp);
-            return NULL;
-        }
-                    
-        char *outputFile;
-        outputFile = (char*)malloc(size * sizeof(char));
-
-        //if name of file contains "wrap", rewrite the file
-        /*if (strstr(file->d_name, "wrap") != NULL){
-            strcpy(outputFile, file->d_name);
-            output_type = open(outputFile, O_RDWR, 0666);
-        }
-                    //name of file does not contain "wrap", create and write to new file
-        else{
-            strcpy(outputFile, argumentTwo);
-            strcat(outputFile, "/wrap.");
-            strcat(outputFile, file->d_name);
-            output_type = open(outputFile, O_RDWR | O_CREAT, 0666);
-        }*/
-
-        //call wordwrap
-        word_wrap(fp, tempA->buffer, tempA->temp, tempA->columns, tempA->output_type);
-
-        free(tempA->argumentTwo);
-        free(outputFile);
-        close(fp);
-        close(tempA->output_type);
-
-        //DEQUEUE FROM QUEUE
-
-        return NULL;
-
-
-}
-//for threading, the worker functions are the ones dequeueing- the reg main function or recursivewrap will enqueue when 
-    //encountering a file/subdirectory
-
-
-void wrapFilesRecursively(char *argumentTwo, char *basePath, char *buffer, char *temp, int columns, int output_type)
+void wrapFilesRecursively(char *basePath, char *buffer, char *temp, int columns, struct fileQueue *file_queue, struct dirQueue *dir_queue)
 {
     char path[1000];
     struct dirent *dp;
@@ -382,30 +351,33 @@ void wrapFilesRecursively(char *argumentTwo, char *basePath, char *buffer, char 
             //if name of file contains "wrap", rewrite the file
             if (strstr(dp->d_name, "wrap") != NULL){
                 strcpy(outputFile, dp->d_name);
-                output_type = open(outputFile, O_RDWR, 0666);
+                //output_type = open(outputFile, O_RDWR, 0666);
             }
             //name of file does not contain "wrap", create and write to new file
             else{
                 strcpy(outputFile, basePath);
                 strcat(outputFile, "/wrap.");
                 strcat(outputFile, dp->d_name);
-                output_type = open(outputFile, O_RDWR | O_CREAT, 0666);
+                //output_type = open(outputFile, O_RDWR | O_CREAT, 0666);
             }
 
+            fileEnqueue(filename, outputFile, file_queue);
+
             //for this block of code, instead of opeing, we add the path to the file queue
-            int fp = open(filename, O_RDONLY);
+            /*int fp = open(filename, O_RDONLY);
             if (fp == -1){
                 perror(filename);
                 free(buffer);
                 free(temp);
                 return; //RETURN WITH ERROR
-            }
+            }*/
 
             //word_wrap(fp, buffer, temp, columns, output_type);
-            close(fp);
+            /*close(fp);
             close(output_type);
             free(filename);
-            free(outputFile);
+            free(outputFile);*/
+
 
         }
         else if (dp->d_type == DT_DIR && (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0)){
@@ -414,12 +386,13 @@ void wrapFilesRecursively(char *argumentTwo, char *basePath, char *buffer, char 
             strcpy(path, basePath);
             strcat(path, "/");
             strcat(path, dp->d_name);
-            printf("%s", path);
+            //printf("%s", path);
 
             //put arguments into a struct
             //PUT PATH IN DIRECTORY WORK QUEUE
             //make a thread and call dir_worker
-            wrapFilesRecursively(argumentTwo, path, buffer, temp, columns, output_type);
+            dirEnqueue(path, dir_queue);
+            wrapFilesRecursively(path, buffer, temp, columns, file_queue, dir_queue);
         }
         
     }
@@ -431,6 +404,81 @@ void wrapFilesRecursively(char *argumentTwo, char *basePath, char *buffer, char 
         //if its a file, wrap and continue looking at the other stuff in the directory
         //if its a directory, call the function again recursively
 }
+
+
+//for threading directories
+void *dir_worker(void *arg){
+    //run wrapFilesRecursively using struct
+    //dequeue the subdirectory once done with the thread- figure out how to dequeue once it is done
+    struct dirFunc_args *tempB = arg;
+    while(1){
+        char *sub_to_remove;
+        sub_to_remove = dirDequeue(tempB->dq);
+        wrapFilesRecursively(sub_to_remove, tempB->buffer, tempB->temp, tempB->columns, tempB->fq, tempB->dq);
+    }
+    return NULL;
+}
+
+//for threading files
+void *file_worker(void *arg){
+    //run wordwrap function using struct
+    //dequeue file path once done
+
+    //GRAB A FILE PATH FROM QUEUE, CHECK THAT IT OPENS, AND WORD WRAP IT
+    //I DONT THINK IT HAS TO BE THE EXACT ONE THAT WE JUST READ, IT SHOULD JUST BE ANY
+
+    //extracts data to use in worker
+    struct fileFunc_args *tempA = arg;
+
+    while (1){
+        int output_type;
+        //dequeue, then do this stuff
+        struct cell file_to_remove = fileDequeue(tempA->q); //gives filepath and output file
+        
+        //char *outputFile;
+        //outputFile = (char*)malloc(size * sizeof(char));
+        //strcpy(outputFile, tempA->argumentTwo);
+        //if name of file contains "wrap", rewrite the file
+        if (strstr(file_to_remove.file_path, "wrap") != NULL){
+            //strcpy(outputFile, file_to_remove);
+            output_type = open(file_to_remove.output_file_path, O_RDWR, 0666);
+        }
+                    //name of file does not contain "wrap", create and write to new file
+        else{
+            //strcpy(outputFile, argumentTwo);
+            //strcat(outputFile, "/wrap.");
+            //strcat(outputFile, tempA->basePath);
+            output_type = open(file_to_remove.output_file_path, O_RDWR | O_CREAT, 0666);
+        }
+
+        int fp = open(file_to_remove.file_path, O_RDONLY);
+        if (fp == -1){
+            perror(file_to_remove.file_path); 
+            free(tempA->buffer);
+            free(tempA->temp);
+            return NULL;
+        }
+
+        //call wordwrap
+        word_wrap(fp, tempA->buffer, tempA->temp, tempA->columns, output_type);
+
+        free(file_to_remove.file_path);
+        free(file_to_remove.output_file_path);
+        close(fp);
+        close(output_type);
+
+        //HAVE SOME SORT OF CHECK TO SEE WHEN TO EXIT THE LOOP
+    }
+
+        //DEQUEUE FROM QUEUE
+
+    return NULL;
+
+
+}
+//for threading, the worker functions are the ones dequeueing- the reg main function or recursivewrap will enqueue when 
+    //encountering a file/subdirectory
+
 
 /*int main(int argc, char **argv)
 {
@@ -504,10 +552,10 @@ int main(int argc, char** argv) {
     int N;
 
     //threading initialization stuff- file queue and directory queue
-    struct queue *file_queue;
-    struct queue *dir_queue;
-    queue_init(file_queue);
-    queue_init(dir_queue);
+    struct fileQueue *file_queue;
+    struct dirQueue *dir_queue;
+    fileQueue_init(file_queue);
+    dirQueue_init(dir_queue);
 
 
 
@@ -582,9 +630,10 @@ int main(int argc, char** argv) {
                     strcat(filename, "/");
                     strcat(filename, file->d_name);
                     
-                    struct func_args *data_args;
+                    struct fileFunc_args *data_args;
+                    data_args->q = file_queue;
                     data_args->argumentTwo = filename;
-                    //data_args->basePath = file->d_name;
+                    data_args->basePath = file->d_name;
                     data_args->buffer = buffer;
                     data_args->temp = temp;
                     data_args->columns = columns;
@@ -592,31 +641,22 @@ int main(int argc, char** argv) {
                     
                     char *outputFile;
                     outputFile = (char*)malloc(size * sizeof(char));
+                    strcpy(outputFile, argumentTwo);
 
                     //if name of file contains "wrap", rewrite the file
                     if (strstr(file->d_name, "wrap") != NULL){
                         strcpy(outputFile, file->d_name);
-                        output_type = open(outputFile, O_RDWR, 0666);
+                        //output_type = open(outputFile, O_RDWR, 0666);
                     }
                     //name of file does not contain "wrap", create and write to new file
                     else{
-                        strcpy(outputFile, argumentTwo);
+                        //strcpy(outputFile, argumentTwo);
                         strcat(outputFile, "/wrap.");
                         strcat(outputFile, file->d_name);
-                        output_type = open(outputFile, O_RDWR | O_CREAT, 0666);
+                        //output_type = open(outputFile, O_RDWR | O_CREAT, 0666);
                     }
-
-                    //from here, the stuff should be in a worker function or some sort of open file function bc the thread has to open the file
-                    /*int fp = open(filename, O_RDONLY);
-                    if (fp == -1){
-                        perror(filename); 
-                        free(buffer);
-                        free(temp);
-                        free(filename);
-                        free(outputFile);
-                        return EXIT_FAILURE;
-                    }*/
                     
+                    fileEnqueue(filename, outputFile, file_queue);
                     //put file path in file queue
                     //make thread for the file
                     if (file_tid_count < N){
@@ -646,17 +686,27 @@ int main(int argc, char** argv) {
                         strcpy(filename, argumentTwo);
                         strcat(filename, "/");
                         strcat(filename, file->d_name);
-                        printf("%s\n", filename);
+                        //printf("%s\n", filename);
                         //char *basePath = file->d_name;  //ERROR- MUST BE TEST/SUB
+
+                        dirEnqueue(filename, dir_queue);
+
+                        struct dirFunc_args *dirData_args;
+                        dirData_args->dq = dir_queue;
+                        dirData_args->fq = file_queue;
+                        dirData_args->basePath = filename;
+                        dirData_args->buffer = buffer;
+                        dirData_args->temp = temp;
+                        dirData_args->columns = columns;
 
 
                         if (dir_tid_count < M){
-                            pthread_create(&file_tid[dir_tid_count], NULL, dir_worker, STUFF);
+                            pthread_create(&dir_tid[dir_tid_count], NULL, dir_worker, &dirData_args);
                             dir_tid_count++;
                         }
-                        
+
                         //here is where we start threading for subdirectories
-                        wrapFilesRecursively(argumentTwo, filename, buffer, temp, columns, output_type);
+                        //wrapFilesRecursively(argumentTwo, filename, buffer, temp, columns, output_type);
                     }
 
                 }
